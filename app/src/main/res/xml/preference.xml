@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="设置">
+
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:title="启用"
+            android:key="enable_fp"
+            android:summary="启用微信指纹支付"
+            android:persistent="false" />
+        <EditTextPreference
+            android:defaultValue=""
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+			android:numeric="integer"
+            android:title="密码"
+            android:key="paypwd"
+            android:password="true"
+            android:summary="请输入微信的支付密码，密码会加密后保存，请放心"
+            android:dependency="enable_fp" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
