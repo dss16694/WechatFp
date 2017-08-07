@@ -7,11 +7,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,8 +45,10 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
     private RelativeLayout Passwd;
     private ImageView fingerprint;
     private RelativeLayout fp_linear;
-    private TextView inputpwd;
+    private TextView inputpwd,passwdtv;
     private static RxFingerPrinter rxFingerPrinter;
+    private static boolean needfp;
+    public static final String WECHAT_PACKAGENAME = "com.tencent.mm";
     public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
         XMOD_PREFS = new XSharedPreferences("com.yyxx.wechatfp", "fp_settings");
         XMOD_PREFS.makeWorldReadable();
@@ -57,21 +57,22 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
         XposedBridge.log("loaded: " + lpparam.packageName);
-        if (lpparam.packageName.equals("com.tencent.mm")) {
+        if (lpparam.packageName.equals(WECHAT_PACKAGENAME)) {
             try {
                 Context context = (Context) XposedHelpers.callMethod(XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread", new Object[0]), "getSystemContext", new Object[0]);
-                if (ObfuscationHelper.init(context.getPackageManager().getPackageInfo("com.tencent.mm", 0).versionCode, context.getPackageManager().getPackageInfo("com.tencent.mm", 0).versionName, lpparam)) {
+                if (ObfuscationHelper.init(context.getPackageManager().getPackageInfo(WECHAT_PACKAGENAME, 0).versionCode, context.getPackageManager().getPackageInfo(WECHAT_PACKAGENAME, 0).versionName, lpparam)) {
                     XposedHelpers.findAndHookMethod(MM_Classes.PayUI, "onCreate",Bundle.class, new XC_MethodHook() {
                         @TargetApi(21)
-                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             WalletPayUI_Activity = (Activity)param.thisObject;
-                            initFingerPrintLock();
+                            needfp = true;
                         }
                     });
-                    XposedHelpers.findAndHookMethod(MM_Classes.PayUI, "onDestroy", new XC_MethodHook() {
+                    XposedHelpers.findAndHookMethod(MM_Classes.FetchUI, "onCreate",Bundle.class, new XC_MethodHook() {
                         @TargetApi(21)
-                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                            rxFingerPrinter.unSubscribe(WalletPayUI_Activity);
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            WalletPayUI_Activity = (Activity)param.thisObject;
+                            needfp = true;
                         }
                     });
                     XposedHelpers.findAndHookConstructor(MM_Classes.Payview ,Context.class , new XC_MethodHook() {
@@ -84,15 +85,13 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
                             }else{
                                 mEnable = false;
                             }
-                            if(mEnable){
-                                //Log.e("test1","hook in l");
+                            if(mEnable && needfp){
+                                initFingerPrintLock();
                                 Passwd = (RelativeLayout)XposedHelpers.getObjectField(param.thisObject, MM_Fields.PaypwdView);
-                                //Log.e("test1",Passwd.getClass().getName());
                                 mInputEditText= (EditText) XposedHelpers.getObjectField(Passwd, MM_Fields.PaypwdEditText);
                                 mInputEditText.setVisibility(View.GONE);
-                                //Log.e("test1",mInputEditText.getClass().getName());
                                 inputpwd = (TextView) XposedHelpers.getObjectField(param.thisObject, MM_Fields.PayTitle);
-                                inputpwd.setText("请验证指纹或点击指纹图标后输入密码");
+                                inputpwd.setText(MM_Res.Finger_title);
                                 final View mKeyboard = (View) XposedHelpers.getObjectField(param.thisObject, MM_Fields.PayInputView);
                                 mKeyboard.setVisibility(View.GONE);
                                 fp_linear = new RelativeLayout(WalletPayUI_Activity);
@@ -110,12 +109,37 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
                                         mInputEditText.setVisibility(View.VISIBLE);
                                         mKeyboard.setVisibility(View.VISIBLE);
                                         rxFingerPrinter.unSubscribe(WalletPayUI_Activity);
-                                        inputpwd.setText("请输入支付密码");
+                                        inputpwd.setText(MM_Res.passwd_title);
                                     }
                                 });
+                                /*
+                                passwdtv = (TextView) XposedHelpers.getObjectField(param.thisObject, MM_Fields.Passwd_Text);
+                                passwdtv.setVisibility(View.VISIBLE);
+                                passwdtv.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        Passwd.removeView(fp_linear);
+                                        mInputEditText.setVisibility(View.VISIBLE);
+                                        mKeyboard.setVisibility(View.VISIBLE);
+                                        rxFingerPrinter.unSubscribe(WalletPayUI_Activity);
+                                        inputpwd.setText(MM_Res.passwd_title);
+                                    }
+                                });
+                                */
                             }else{
                                 rxFingerPrinter.unSubscribe(WalletPayUI_Activity);
                             }
+                        }
+                    });
+                    XposedHelpers.findAndHookMethod(MM_Classes.Payview, "dismiss", new XC_MethodHook() {
+                        @TargetApi(21)
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            if(WalletPayUI_Activity != null){
+                                rxFingerPrinter.unSubscribe(WalletPayUI_Activity);
+                                WalletPayUI_Activity = null;
+                                needfp = false;
+                            }
+
 
                         }
                     });
@@ -143,12 +167,21 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
                                         if (e instanceof FPerException) {
                                             switch (((FPerException) e).getCode()) {
                                                 case SYSTEM_API_ERROR:
+                                                    Toast.makeText(WalletPayUI_Activity, "系统API小于23，请关闭WechaFp模块", Toast.LENGTH_SHORT).show();
+                                                    needfp = false;
                                                 case PERMISSION_DENIED_ERROE:
+                                                    Toast.makeText(WalletPayUI_Activity, "未开启微信使用指纹的权限", Toast.LENGTH_SHORT).show();
+                                                    needfp = false;
                                                 case HARDWARE_MISSIING_ERROR:
+                                                    Toast.makeText(WalletPayUI_Activity, "未找到可用指纹传感器，请关闭WechaFp模块", Toast.LENGTH_SHORT).show();
+                                                    needfp = false;
                                                 case KEYGUARDSECURE_MISSIING_ERROR:
+                                                    Toast.makeText(WalletPayUI_Activity, "未开启锁屏密码保护", Toast.LENGTH_SHORT).show();
+                                                    needfp = false;
                                                 case NO_FINGERPRINTERS_ENROOLED_ERROR:
-                                                    break;
+                                                    Toast.makeText(WalletPayUI_Activity, "未录入指纹，请在系统中录入指纹后再使用", Toast.LENGTH_SHORT).show();
                                                 case FINGERPRINTERS_FAILED_ERROR:
+                                                    Toast.makeText(WalletPayUI_Activity, "指纹认证失败", Toast.LENGTH_SHORT).show();
                                                 default:
                                                     Log.e("test1",((FPerException) e).getDisplayMessage());
                                             }
@@ -172,7 +205,6 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
         }
     }
     private static void onSuccessUnlock() {
-        //Log.e("test1","好开心，指纹验证成功");
         XMOD_PREFS.reload();
         String pwd;
         String ANDROID_ID = Settings.System.getString(WalletPayUI_Activity.getContentResolver(), Settings.System.ANDROID_ID);
@@ -181,7 +213,6 @@ public class WalletBaseUI implements IXposedHookZygoteInit, IXposedHookLoadPacka
         }else{
             pwd="";
         }
-        //Log.e("test1",pwd);
         if(pwd.length()>0){
             mInputEditText.setText(AESHelper.decrypt(pwd,ANDROID_ID));
         }else{
