@@ -1,6 +1,7 @@
 package com.yyxx.wechatfp;
 
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -11,9 +12,10 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.wei.android.lib.fingerprintidentify.FingerprintIdentify;
 import com.yyxx.wechatfp.Utils.AESHelper;
-import com.yyxx.wechatfp.Utils.SecuritySharedPreference;
 
 
 /**
@@ -35,6 +37,7 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
     private SharedPreferences prefs,defaultprefs;
     private EditTextPreference mPaypwd;
     private CheckBoxPreference mEnable;
+    private FingerprintIdentify mFingerprintIdentify;
     private static final String MOD_PREFS = "fp_settings";
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +52,21 @@ public class SettingsActivity extends PreferenceActivity implements Preference.O
         mEnable.setOnPreferenceChangeListener(this);
         mEnable.setOnPreferenceClickListener(this);
         mPaypwd.setOnPreferenceClickListener(this);
+        mFingerprintIdentify = new FingerprintIdentify(this);
+        if(!mFingerprintIdentify.isHardwareEnable()){
+            Toast.makeText(this, "指纹传感器不可用，请确认本机已配备指纹传感器", Toast.LENGTH_SHORT).show();
+            mEnable.setChecked(false);
+            mEnable.setEnabled(false);
+            mPaypwd.setEnabled(false);
+        }else{
+            if(!mFingerprintIdentify.isRegisteredFingerprint()){
+                Toast.makeText(this, "未录入指纹，请在设置中录入有效指纹", Toast.LENGTH_SHORT).show();
+                mEnable.setChecked(false);
+                mEnable.setEnabled(false);
+                mPaypwd.setEnabled(false);
+            }
+        }
+
     }
 
     @Override
