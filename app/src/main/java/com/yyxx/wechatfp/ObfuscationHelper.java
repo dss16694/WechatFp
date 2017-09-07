@@ -11,10 +11,10 @@ public class ObfuscationHelper {
         public static Class<?> PayUI,FetchUI,Payview,WalletBaseUI;
 
         private static void init(int idx, LoadPackageParam lpparam) throws Throwable {
-            PayUI = XposedHelpers.findClass("com.tencent.mm.plugin.wallet.pay.ui." + new String[]{"WalletPayUI","WalletPayUI","WalletPayUI"}[idx], lpparam.classLoader);
-            Payview = XposedHelpers.findClass("com.tencent.mm.plugin.wallet_core.ui." + new String[]{"l","l","l"}[idx], lpparam.classLoader);
-            FetchUI = XposedHelpers.findClass("com.tencent.mm.plugin.wallet.balance.ui." + new String[]{"WalletBalanceFetchPwdInputUI","WalletBalanceFetchPwdInputUI","WalletBalanceFetchPwdInputUI"}[idx], lpparam.classLoader);
-            WalletBaseUI = XposedHelpers.findClass("com.tencent.mm.wallet_core.ui." + new String[]{"WalletBaseUI","WalletBaseUI","WalletBaseUI"}[idx], lpparam.classLoader);
+            PayUI = XposedHelpers.findClass("com.tencent.mm.plugin.wallet.pay.ui." + new String[]{"WalletPayUI","WalletPayUI","WalletPayUI","WalletPayUI"}[idx], lpparam.classLoader);
+            Payview = XposedHelpers.findClass("com.tencent.mm.plugin.wallet_core.ui." + new String[]{"l","l","l","l"}[idx], lpparam.classLoader);
+            FetchUI = XposedHelpers.findClass("com.tencent.mm.plugin.wallet.balance.ui." + new String[]{"WalletBalanceFetchPwdInputUI","WalletBalanceFetchPwdInputUI","WalletBalanceFetchPwdInputUI","WalletBalanceFetchPwdInputUI"}[idx], lpparam.classLoader);
+            WalletBaseUI = XposedHelpers.findClass("com.tencent.mm.wallet_core.ui." + new String[]{"WalletBaseUI","WalletBaseUI","WalletBaseUI","WalletBaseUI"}[idx], lpparam.classLoader);
         }
     }
 
@@ -26,11 +26,11 @@ public class ObfuscationHelper {
         public static String Passwd_Text;
 
         private static void init(int idx) throws Throwable {
-            PaypwdView = new String[]{"qVO","ryk","ryM"}[idx];
-            PaypwdEditText = new String[]{"vyO","wjm","wjX"}[idx];
-            PayInputView = new String[]{"mOL","nnG","nnZ"}[idx];
-            PayTitle = new String[]{"qVK","ryg","ryI"}[idx];
-            Passwd_Text = new String[]{"qVK","ryz","rzb"}[idx];
+            PaypwdView = new String[]{"qVO","ryk","ryM","rLB"}[idx];
+            PaypwdEditText = new String[]{"vyO","wjm","wjX","wDJ"}[idx];
+            PayInputView = new String[]{"mOL","nnG","nnZ","nol"}[idx];
+            PayTitle = new String[]{"qVK","ryg","ryI","rLw"}[idx];
+            Passwd_Text = new String[]{"qVK","ryz","rzb","rLQ"}[idx];
         }
     }
     public static class MM_Res {
@@ -39,9 +39,9 @@ public class ObfuscationHelper {
         public static int passwd_title;
 
         private static void init(int idx) throws Throwable {
-            Finger_icon=new int[]{2130838280,2130838289,2130838289}[idx];
-            Finger_title=new int[]{2131236833,2131236918,2131236918}[idx];
-            passwd_title=new int[]{2131236838,2131236923,2131236923}[idx];
+            Finger_icon=new int[]{2130838280,2130838289,2130838289,2130838298}[idx];
+            Finger_title=new int[]{2131236833,2131236918,2131236918,2131236964}[idx];
+            passwd_title=new int[]{2131236838,2131236923,2131236923,2131236969}[idx];
         }
     }
 
@@ -71,6 +71,10 @@ public class ObfuscationHelper {
         if(versionName.contains("6.5.10") && versioncode == 1061){
             versionint=2;
             return 2;
+        }
+        if(versionName.contains("6.5.13") && versioncode == 1100){
+            versionint=3;
+            return 3;
         }
         return -1;
     }
